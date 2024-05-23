@@ -41,8 +41,6 @@ const AuthProvider = ({ children }) => {
       const data = { email, password };
       const res = await loginApi(data);
       if (res.data.status.trim() === "success") {
-        await AsyncStorage.setItem("token", JSON.stringify(res.data.token));
-        await AsyncStorage.setItem("user", JSON.stringify(res.data.data.user));
         setCurrentUser(res.data.data.user);
 
         console.log("user", currentUser);

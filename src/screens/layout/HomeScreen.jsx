@@ -12,53 +12,137 @@ import {
   ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { AuthContext } from "../../contexts/AuthContext";
 import COLORS from "../../constants/colors";
-import ProductContext from "../../contexts/ProductContext";
 import { getToken } from "../../composable/local";
+
+import MapViewComponent from "../../components/MapViewComponent";
+import Carousel from "../../components/Carousel";
 
 const { width } = Dimensions.get("screen");
 const cardWidth = width / 1.8;
 
 const HomeScreen = ({ navigation }) => {
   const { loading } = useContext(AuthContext);
-
   const [currentlyLoggedIn, setCurrentlyLoggedIn] = useState(null);
+  const [topProducts, setTopProducts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [category, setCategory] = useState("All");
 
-  const { products, setProducts } = useContext(ProductContext);
+  useEffect(() => {
+    fetchUserProfile();
+    fetchTopProducts();
+    fetchProducts();
+  }, [category]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserProfile();
+    }, [])
+  );
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}users/me`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentlyLoggedIn(data.data.user);
+      } else {
+        throw new Error("Failed to fetch user profile");
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      Alert.alert(
+        "Error",
+        "An error occurred while fetching the user profile."
+      );
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      let url = `${process.env.EXPO_PUBLIC_API_URL}products`;
+
+      if (category === "Populaire") {
+        url += "?ratingsAverage[gte]=4";
+      } else if (category === "Cher") {
+        url += "?price[gte]=100&price[lte]=170";
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      const data = await response.json();
+      setProducts(data.data.documents);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      Alert.alert("Error", "An error occurred while fetching the products.");
+    }
+  };
+
+  const fetchTopProducts = async () => {
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}products/top-5-cheap`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setTopProducts(data.data.documents);
+      } else {
+        throw new Error("Failed to fetch top products");
+      }
+    } catch (err) {
+      console.error("Error fetching top products:", err);
+      Alert.alert("Error", "An error occurred while fetching top products.");
+    }
+  };
+
+  const fetchSearchResults = async (query) => {
+    try {
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}products?name=${query}`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch search results");
+      }
+      const data = await response.json();
+      setSearchResults(data.data.documents);
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      Alert.alert(
+        "Error",
+        "An error occurred while fetching the search results."
+      );
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query.length > 2) {
+      fetchSearchResults(query);
+    } else {
+      setSearchResults([]);
+    }
+  };
 
   if (loading) {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
-
-  // Fetching current user profile
-  useEffect(() => {
-    async function fetchUserProfile() {
-      try {
-        const token = await getToken();
-        const response = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}users/me`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentlyLoggedIn(data.data.user);
-        } else {
-          throw new Error("Failed to fetch user profile");
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    }
-    fetchUserProfile();
-  }, []);
 
   const Card = ({ product }) => (
     <TouchableOpacity
@@ -80,29 +164,73 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.userInfo}>
         <Icon name="person" size={24} color={COLORS.grey} />
         <Text style={styles.userName}>
-          {currentlyLoggedIn ? (
-            <Text>Welcome, {currentlyLoggedIn.name}</Text>
-          ) : (
-            <Text>No user logged in</Text>
-          )}
+          {currentlyLoggedIn
+            ? `Bienvenue, ${currentlyLoggedIn.name}`
+            : "No user logged in"}
         </Text>
       </View>
-      <Text style={styles.headerText}>Find your product in Tunisia</Text>
+      <Text style={styles.headerText}>Touvez vos produits chez nous</Text>
       <View style={styles.searchContainer}>
         <Icon name="search" size={30} style={styles.searchIcon} />
-        <TextInput placeholder="Search" style={styles.searchInput} />
+        <TextInput
+          placeholder="Search"
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={handleSearch}
+        />
       </View>
+      {searchResults.length > 0 && (
+        <View style={styles.searchResultsContainer}>
+          {searchResults.map((product) => (
+            <TouchableOpacity
+              key={product._id}
+              onPress={() => navigation.navigate("DetailsScreen", { product })}
+            >
+              <Text style={styles.searchResultItem}>{product.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {/* Carousel */}
+      <Text style={styles.headerText1}>Nouveaux Arrivage</Text>
+      <Carousel />
+
+      {/* Top Products Section */}
+      <Text style={styles.headerText}>Meilleur 5 Produits</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.cardsContainer}
+      >
+        {topProducts.map((product, index) => (
+          <Card key={index} product={product} />
+        ))}
+      </ScrollView>
+
+      {/* Category Section */}
       <View style={styles.categoryContainer}>
-        <TouchableOpacity style={styles.categoryItem}>
+        <TouchableOpacity
+          style={styles.categoryItem}
+          onPress={() => setCategory("All")}
+        >
           <Text style={styles.categoryText}>All</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryItem}>
-          <Text style={styles.categoryText}>Popular</Text>
+        <TouchableOpacity
+          style={styles.categoryItem}
+          onPress={() => setCategory("Populaire")}
+        >
+          <Text style={styles.categoryText}>Populaire</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.categoryItem}>
-          <Text style={styles.categoryText}>Top Rated</Text>
+        <TouchableOpacity
+          style={styles.categoryItem}
+          onPress={() => setCategory("Cher")}
+        >
+          <Text style={styles.categoryText}>Cher</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Products Section */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -112,6 +240,13 @@ const HomeScreen = ({ navigation }) => {
           <Card key={index} product={product} />
         ))}
       </ScrollView>
+
+      {/* Map View */}
+      <Text style={styles.headerText}>Ou nous Trouvez</Text>
+      <View style={styles.mapContainer}>
+        <MapViewComponent />
+      </View>
+
       <TouchableOpacity
         style={styles.chatIconContainer}
         onPress={() => navigation.navigate("ChatBot")}
@@ -141,6 +276,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.grey,
   },
+  headerText1: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: COLORS.orange,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
   headerText: {
     fontSize: 24,
     fontWeight: "bold",
@@ -164,6 +306,22 @@ const styles = StyleSheet.create({
     fontSize: 20,
     paddingVertical: 10,
     flex: 1,
+  },
+  searchResultsContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  searchResultItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
   },
   categoryContainer: {
     flexDirection: "row",
@@ -191,7 +349,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginRight: 20,
     backgroundColor: COLORS.white,
-    elevation: 15,
+    elevation: 5,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -221,6 +379,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginTop: 5,
+  },
+  mapContainer: {
+    height: 300,
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 20,
+    overflow: "hidden",
   },
   chatIconContainer: {
     position: "absolute",

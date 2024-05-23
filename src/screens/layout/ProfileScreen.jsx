@@ -7,11 +7,10 @@ import {
   Alert,
   ImageBackground,
   Image,
-  Pressable,
 } from "react-native";
 import { Avatar, Card } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getToken } from "../../composable/local";
 import colors from "../../constants/colors";
 import dayjs from "dayjs";
@@ -20,14 +19,9 @@ import { AuthContext } from "./../../contexts/AuthContext";
 
 const ProfileScreen = () => {
   const { currentUser, handleLogout } = useContext(AuthContext);
-
   const navigation = useNavigation();
   const [userProfile, setUserProfile] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
 
   const fetchUserProfile = async () => {
     try {
@@ -59,6 +53,20 @@ const ProfileScreen = () => {
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserProfile();
+    }, [])
+  );
+
+  if (!userProfile) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   const handleSelectImageFromGallery = async () => {
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
@@ -68,7 +76,7 @@ const ProfileScreen = () => {
         quality: 1,
       });
 
-      if (!result.cancelled) {
+      if (!result.canceled) {
         await handleImageUpload(result.uri);
       } else {
         Alert.alert("You did not select any image.");
@@ -86,7 +94,7 @@ const ProfileScreen = () => {
         quality: 1,
       });
 
-      if (!result.cancelled) {
+      if (!result.canceled) {
         await handleImageUpload(result.uri);
       } else {
         Alert.alert("You did not take any picture.");
@@ -136,35 +144,34 @@ const ProfileScreen = () => {
         source={{ uri: "https://via.placeholder.com/800x400" }}
         style={styles.background}
       >
-        <TouchableOpacity
-          style={styles.settingsButton}
-          onPress={() => navigation.navigate("EditUser")}
-        >
-          <Ionicons name="settings-outline" size={24} color={colors.white} />
-        </TouchableOpacity>
         <Card style={styles.card}>
+          <TouchableOpacity
+            style={styles.settingsButton}
+            onPress={() => navigation.navigate("EditUser")}
+          >
+            <Ionicons name="settings-outline" size={24} color={colors.white} />
+          </TouchableOpacity>
           <Card.Content style={styles.content}>
             {userProfile && (
               <View style={styles.userInfo}>
-                <TouchableOpacity onPress={handleSelectImageFromGallery}>
-                  <Avatar.Image
-                    size={120}
-                    source={{
-                      uri: profileImage || "https://via.placeholder.com/100",
-                    }}
-                    style={styles.avatar}
-                  />
-                </TouchableOpacity>
+                <View style={styles.avatarContainer}>
+                  <TouchableOpacity onPress={handleSelectImageFromGallery}>
+                    <Avatar.Image
+                      size={120}
+                      source={{
+                        uri: profileImage || "https://via.placeholder.com/100",
+                      }}
+                      style={styles.avatar}
+                    />
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.cameraButton}
-                  onPress={handleSelectImageFromCamera}
-                >
-                  <Image
-                    source={require("./../../../assets/favicon.png")}
-                    style={styles.cameraIcon}
-                  />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.cameraButton}
+                    onPress={handleSelectImageFromCamera}
+                  >
+                    <Ionicons name="camera" size={24} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
 
                 <Text style={styles.userName}>{userProfile.name}</Text>
                 <Text style={styles.userRole}>{userProfile.role}</Text>
@@ -199,37 +206,41 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     position: "absolute",
-    top: 40,
-    left: 20,
-    zIndex: 1,
+    top: -10,
+    right: -5,
+    backgroundColor: colors.grayLight,
+    padding: 8,
+    borderRadius: 20,
+    zIndex: 10,
   },
   card: {
     width: "90%",
     backgroundColor: colors.white,
     borderRadius: 20,
     elevation: 5,
-    padding: 20,
+    paddingVertical: 30,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
   content: {
     alignItems: "center",
   },
-  cameraButton: {
-    marginTop: 10,
-    backgroundColor: colors.primary,
-    borderRadius: 50,
-    width: 60,
-    height: 60,
-    justifyContent: "center",
+  avatarContainer: {
+    position: "relative",
     alignItems: "center",
+    marginBottom: 15,
   },
-  cameraIcon: {
-    width: 30,
-    height: 30,
-    tintColor: colors.white,
+  cameraButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    padding: 8,
   },
   userInfo: {
     alignItems: "center",
-    marginVertical: 20,
+    marginTop: 20,
   },
   avatar: {
     marginBottom: 15,
@@ -253,11 +264,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: "red",
+    backgroundColor: colors.danger,
     borderRadius: 5,
   },
   buttonText: {
-    color: "white",
+    color: colors.white,
+    fontWeight: "bold",
   },
 });
 

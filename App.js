@@ -17,6 +17,10 @@ import EditUser from "./src/screens/layout/EditUser";
 
 import { AuthProvider } from "./src/contexts/AuthContext";
 import { ProductProvider } from "./src/contexts/ProductContext";
+import { CartProvider } from "./src/contexts/CartContext";
+import { FavoritesProvider } from "./src/contexts/FavoritesContext";
+import CartScreen from "./src/screens/layout/CartScreen";
+import FavoritesScreen from "./src/screens/layout/FavoritesScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,105 +30,137 @@ export default function App() {
       <NavigationContainer>
         <AuthProvider>
           <ProductProvider>
-            <Stack.Navigator>
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="onBoardingScreen"
-                component={OnBoardingScreen}
-              />
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="Welcome"
-                component={Welcome}
-              />
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="LoginScreen"
-                component={LoginScreen}
-              />
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="SignupScreen"
-                component={SignupScreen}
-              />
-              <Stack.Screen
-                name="ForgotPassword"
-                component={ForgotPasswordScreen}
-                options={{
-                  headerShown: false,
-                  useNativeDriver: true,
-                  cardStyleInterpolator: ({ current: { progress } }) => ({
-                    cardStyle: {
-                      opacity: progress,
-                    },
-                  }),
-                }}
-              />
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="ResetPasswordScreen"
-                component={ResetPasswordScreen}
-              />
-              <Stack.Screen
-                name="BottomTab"
-                component={BottomTab}
-                options={{
-                  headerShown: false,
-                  useNativeDriver: true,
-                  cardStyleInterpolator: ({ current: { progress } }) => ({
-                    cardStyle: {
-                      opacity: progress,
-                    },
-                  }),
-                }}
-              />
+            <CartProvider>
+              <FavoritesProvider>
+                <Stack.Navigator>
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="onBoardingScreen"
+                    component={OnBoardingScreen}
+                  />
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="Welcome"
+                    component={Welcome}
+                  />
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="LoginScreen"
+                    component={LoginScreen}
+                  />
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="SignupScreen"
+                    component={SignupScreen}
+                  />
+                  <Stack.Screen
+                    name="ForgotPassword"
+                    component={ForgotPasswordScreen}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="ResetPasswordScreen"
+                    component={ResetPasswordScreen}
+                  />
+                  <Stack.Screen
+                    name="BottomTab"
+                    component={BottomTab}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
 
-              <Stack.Screen
-                options={{ headerShown: false }}
-                name="Home"
-                component={HomeScreen}
-              />
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="Home"
+                    component={HomeScreen}
+                  />
 
-              <Stack.Screen
-                name="DetailsScreen"
-                component={DetailsScreen}
-                options={{
-                  headerShown: false,
-                  useNativeDriver: true,
-                  cardStyleInterpolator: ({ current: { progress } }) => ({
-                    cardStyle: {
-                      opacity: progress,
-                    },
-                  }),
-                }}
-              />
-              <Stack.Screen
-                name="ChatBot"
-                component={ChatBot}
-                options={{
-                  headerShown: false,
-                  useNativeDriver: true,
-                  cardStyleInterpolator: ({ current: { progress } }) => ({
-                    cardStyle: {
-                      opacity: progress,
-                    },
-                  }),
-                }}
-              />
-              <Stack.Screen
-                name="EditUser"
-                component={EditUser}
-                options={{
-                  headerShown: false,
-                  useNativeDriver: true,
-                  cardStyleInterpolator: ({ current: { progress } }) => ({
-                    cardStyle: {
-                      opacity: progress,
-                    },
-                  }),
-                }}
-              />
-            </Stack.Navigator>
+                  <Stack.Screen
+                    name="DetailsScreen"
+                    component={DetailsScreen}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+                  <Stack.Screen
+                    name="ChatBot"
+                    component={ChatBot}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+                  <Stack.Screen
+                    name="EditUser"
+                    component={EditUser}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+
+                  <Stack.Screen
+                    name="CartScreen"
+                    component={CartScreen}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+
+                  <Stack.Screen
+                    name="FavoritesScreen"
+                    component={FavoritesScreen}
+                    options={{
+                      headerShown: false,
+                      useNativeDriver: true,
+                      cardStyleInterpolator: ({ current: { progress } }) => ({
+                        cardStyle: {
+                          opacity: progress,
+                        },
+                      }),
+                    }}
+                  />
+                </Stack.Navigator>
+              </FavoritesProvider>
+            </CartProvider>
           </ProductProvider>
         </AuthProvider>
       </NavigationContainer>

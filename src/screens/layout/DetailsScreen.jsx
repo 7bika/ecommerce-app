@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import {
   ImageBackground,
   ScrollView,
@@ -12,17 +12,39 @@ import {
 } from "react-native";
 import COLORS from "./../../constants/colors";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import CartContext from "../../contexts/CartContext";
+import FavoritesContext from "../../contexts/FavoritesContext";
 
 const DetailsScreen = ({ navigation, route }) => {
   let item = route.params.product;
 
+  const { addToCart } = useContext(CartContext); // Use CartContext
+  const { addToFavorites, removeFromFavorites, isFavorite } =
+    useContext(FavoritesContext);
+
+  const [isBookmarked, setIsBookmarked] = useState(false);
+
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     fetchReviews(item.id);
   }, []);
+
+  useEffect(() => {
+    setIsBookmarked(isFavorite(item.id));
+  }, [item.id, isFavorite]);
+
+  const handleBookmarkPress = () => {
+    if (isBookmarked) {
+      removeFromFavorites(item.id);
+    } else {
+      addToFavorites(item);
+    }
+    setIsBookmarked(!isBookmarked);
+  };
 
   const fetchReviews = async (productId) => {
     try {
@@ -73,6 +95,11 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleAddToCart = () => {
+    addToCart({ ...item, quantity }); // Add item to cart with quantity
+    navigation.navigate("CartScreen"); // Navigate to CartScreen
+  };
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
@@ -86,7 +113,10 @@ const DetailsScreen = ({ navigation, route }) => {
         translucent
         backgroundColor="rgba(0,0,0,0)"
       />
-      <ImageBackground style={style.headerImage} source={item.imageCover}>
+      <ImageBackground
+        style={style.headerImage}
+        source={{ uri: item.imageCover }}
+      >
         <View style={style.header}>
           <Icon
             name="arrow-back-ios"
@@ -99,7 +129,13 @@ const DetailsScreen = ({ navigation, route }) => {
       </ImageBackground>
       <View>
         <View style={style.iconContainer}>
-          <Icon name="bookmark-border" color={COLORS.white} size={28} />
+          <TouchableOpacity onPress={handleBookmarkPress}>
+            <Icon
+              name={isBookmarked ? "bookmark" : "bookmark-border"}
+              color={isBookmarked ? COLORS.orange : COLORS.white}
+              size={28}
+            />
+          </TouchableOpacity>
         </View>
         <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
           <Text style={{ fontSize: 20, fontWeight: "bold" }}>{item.name}</Text>
@@ -234,108 +270,130 @@ const DetailsScreen = ({ navigation, route }) => {
             </Text>
           </View>
         </View>
-        <View style={style.btn}>
+        <TouchableOpacity style={style.btn} onPress={handleAddToCart}>
           <Text
             style={{ color: COLORS.white, fontSize: 18, fontWeight: "bold" }}
           >
             Ajouter au panier
           </Text>
-        </View>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity
+              onPress={() => {
+                if (quantity > 1) {
+                  setQuantity(quantity - 1);
+                }
+              }}
+            >
+              <Icon name="remove" size={30} color={COLORS.white} />
+            </TouchableOpacity>
+            <Text
+              style={{
+                color: COLORS.white,
+                fontSize: 18,
+                marginHorizontal: 10,
+              }}
+            >
+              {quantity}
+            </Text>
+            <TouchableOpacity onPress={() => setQuantity(quantity + 1)}>
+              <Icon name="add" size={30} color={COLORS.white} />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
 const style = StyleSheet.create({
-  btn: {
-    height: 55,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 40,
-    backgroundColor: COLORS.primary,
-    marginHorizontal: 20,
-    borderRadius: 10,
-  },
-  priceTag: {
-    height: 40,
-    alignItems: "center",
-    marginLeft: 40,
-    paddingLeft: 20,
-    flex: 1,
-    backgroundColor: COLORS.secondary,
-    borderTopLeftRadius: 20,
-    borderBottomLeftRadius: 20,
-    flexDirection: "row",
-  },
-  iconContainer: {
-    position: "absolute",
-    height: 60,
-    width: 60,
-    backgroundColor: COLORS.primary,
-    top: -30,
-    right: 20,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   headerImage: {
     height: 400,
-    borderBottomRightRadius: 40,
     borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     overflow: "hidden",
   },
   header: {
     marginTop: 60,
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 20,
     justifyContent: "space-between",
+    paddingHorizontal: 20,
+  },
+  iconContainer: {
+    height: 60,
+    width: 60,
+    backgroundColor: COLORS.primary,
+    position: "absolute",
+    top: -30,
+    right: 20,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
   },
   reviewsContainer: {
     marginTop: 20,
     paddingHorizontal: 20,
   },
   review: {
-    marginBottom: 20,
-    padding: 15,
     backgroundColor: COLORS.light,
-    borderRadius: 8,
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   reviewHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   reviewUser: {
     fontWeight: "bold",
+    fontSize: 16,
   },
   reviewDate: {
+    fontSize: 12,
     color: COLORS.grey,
   },
   reviewStars: {
     flexDirection: "row",
-    marginBottom: 10,
+    marginBottom: 5,
   },
   reviewText: {
-    color: COLORS.grey,
+    fontSize: 14,
   },
   reviewInput: {
-    marginTop: 10,
-    padding: 10,
     borderColor: COLORS.grey,
     borderWidth: 1,
     borderRadius: 5,
+    padding: 10,
+    marginTop: 10,
   },
   submitButton: {
-    marginTop: 10,
     backgroundColor: COLORS.primary,
-    padding: 15,
+    padding: 10,
     borderRadius: 5,
     alignItems: "center",
+    marginTop: 10,
   },
   submitButtonText: {
     color: COLORS.white,
     fontWeight: "bold",
+  },
+  priceTag: {
+    backgroundColor: COLORS.primary,
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    flexDirection: "row",
+  },
+  btn: {
+    backgroundColor: COLORS.primary,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderRadius: 10,
+    padding: 15,
+    marginHorizontal: 20,
+    marginTop: 20,
   },
 });
 

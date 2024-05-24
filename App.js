@@ -21,6 +21,7 @@ import { CartProvider } from "./src/contexts/CartContext";
 import { FavoritesProvider } from "./src/contexts/FavoritesContext";
 import CartScreen from "./src/screens/layout/CartScreen";
 import FavoritesScreen from "./src/screens/layout/FavoritesScreen";
+import HistoryScreen from "./src/screens/layout/HistoryScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -143,6 +144,12 @@ export default function App() {
                         },
                       }),
                     }}
+                  />
+
+                  <Stack.Screen
+                    options={{ headerShown: false }}
+                    name="HistoryScreen"
+                    component={HistoryScreen}
                   />
 
                   <Stack.Screen

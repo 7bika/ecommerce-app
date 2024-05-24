@@ -16,10 +16,12 @@ import COLORS from "./../../constants/colors";
 import CartContext from "../../contexts/CartContext";
 import { getToken } from "../../composable/local";
 import DropDownPicker from "react-native-dropdown-picker";
+import { useNavigation } from "@react-navigation/native";
 
 const CartScreen = ({ navigation }) => {
   const { cart, updateQuantity, removeFromCart, clearCart } =
     useContext(CartContext);
+  const nav = useNavigation();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
@@ -77,7 +79,7 @@ const CartScreen = ({ navigation }) => {
 
   const handleCheckout = async () => {
     if (!mobileNumber || !address || !city || !postalCode || !country) {
-      Alert.alert("Error", "Please fill in all fields.");
+      Alert.alert("Error", "Veuillez remplir tous les champs");
       return;
     }
 
@@ -116,7 +118,7 @@ const CartScreen = ({ navigation }) => {
       Alert.alert("Success", "Order created successfully.");
       clearCart();
       setModalVisible(false);
-      navigation.navigate("Home", {
+      nav.navigate("Home", {
         orderId: data.data._id,
       });
     } catch (error) {
@@ -127,6 +129,12 @@ const CartScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate("HistoryScreen")}>
+          <Icon name="history" size={30} color={COLORS.primary} />
+          <Text> Historique des commandes </Text>
+        </TouchableOpacity>
+      </View>
       {cart.length > 0 ? (
         <>
           <FlatList
@@ -168,13 +176,13 @@ const CartScreen = ({ navigation }) => {
               onPress={() => setModalVisible(true)}
               disabled={cart.length === 0}
             >
-              <Text style={styles.checkoutButtonText}>Checkout</Text>
+              <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
             </TouchableOpacity>
           </View>
         </>
       ) : (
         <View style={styles.emptyCartContainer}>
-          <Text style={styles.emptyCartText}>Your cart is empty</Text>
+          <Text style={styles.emptyCartText}>Votre panier est vide.</Text>
         </View>
       )}
 
@@ -186,39 +194,41 @@ const CartScreen = ({ navigation }) => {
       >
         <View style={styles.modalView}>
           <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalText}>Enter Your Information</Text>
+            <Text style={styles.modalText}>Checkout</Text>
             <TextInput
               style={styles.input}
-              placeholder="Téléphone"
+              placeholder="Mobile Number"
               value={mobileNumber}
               onChangeText={setMobileNumber}
+              keyboardType="phone-pad"
             />
             <TextInput
               style={styles.input}
-              placeholder="Addresse"
+              placeholder="Address"
               value={address}
               onChangeText={setAddress}
             />
             <TextInput
               style={styles.input}
-              placeholder="Gouvernat"
+              placeholder="City"
               value={city}
               onChangeText={setCity}
             />
             <TextInput
               style={styles.input}
-              placeholder="Code Psotale"
+              placeholder="Postal Code"
               value={postalCode}
               onChangeText={setPostalCode}
+              keyboardType="numeric"
             />
             <TextInput
               style={styles.input}
-              placeholder="Ville"
+              placeholder="Country"
               value={country}
               onChangeText={setCountry}
             />
-            <Text style={styles.label}>Payment Method</Text>
             <View style={styles.pickerWrapper}>
+              <Text style={styles.label}>Payment Method</Text>
               <DropDownPicker
                 open={open}
                 value={paymentMethod}
@@ -226,10 +236,8 @@ const CartScreen = ({ navigation }) => {
                 setOpen={setOpen}
                 setValue={setPaymentMethod}
                 setItems={setItems}
-                placeholder="Select Payment Method"
-                containerStyle={styles.pickerContainer}
                 style={styles.picker}
-                dropDownStyle={styles.dropDown}
+                dropDownContainerStyle={styles.dropDown}
               />
             </View>
             <View style={styles.modalButtons}>
@@ -237,13 +245,13 @@ const CartScreen = ({ navigation }) => {
                 style={[styles.button, styles.buttonClose]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.textStyleCancel}>Annuler</Text>
+                <Text style={styles.textStyle}>Cancel</Text>
               </Pressable>
               <Pressable
                 style={[styles.button, styles.buttonSubmit]}
                 onPress={handleCheckout}
               >
-                <Text style={styles.textStyle}>Confirmer</Text>
+                <Text style={styles.textStyle}>Submit</Text>
               </Pressable>
             </View>
           </ScrollView>
@@ -256,17 +264,21 @@ const CartScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
     padding: 20,
+    backgroundColor: COLORS.white,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
   },
   cartItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
-    padding: 15,
-    backgroundColor: COLORS.light,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.light,
   },
   cartItemName: {
     fontSize: 18,
@@ -275,8 +287,8 @@ const styles = StyleSheet.create({
     width: "30%",
   },
   cartItemPrice: {
+    fontSize: 18,
     fontWeight: "bold",
-    fontSize: 16,
     color: COLORS.orange,
     width: "20%",
   },

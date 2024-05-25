@@ -241,6 +241,10 @@ const EditUser = () => {
       {userProfile && (
         <View style={styles.infoContainer}>
           <Text style={styles.infoText}>
+            <Text style={styles.infoLabel}>Nom: </Text>
+            {userProfile.name}
+          </Text>
+          <Text style={styles.infoText}>
             <Text style={styles.infoLabel}>Email: </Text>
             {userProfile.email}
           </Text>

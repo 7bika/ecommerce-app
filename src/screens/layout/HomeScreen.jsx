@@ -10,12 +10,16 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  FlatList,
+  Animated,
+  Linking,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { AuthContext } from "../../contexts/AuthContext";
 import COLORS from "../../constants/colors";
 import { getToken } from "../../composable/local";
+import { FontAwesome5 } from "@expo/vector-icons";
 
 import MapViewComponent from "../../components/MapViewComponent";
 import Carousel from "../../components/Carousel";
@@ -31,6 +35,9 @@ const HomeScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [category, setCategory] = useState("All");
+
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const scrollX = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     fetchUserProfile();
@@ -144,33 +151,138 @@ const HomeScreen = ({ navigation }) => {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
 
-  const Card = ({ product }) => (
-    <TouchableOpacity
-      onPress={() => navigation.navigate("DetailsScreen", { product })}
-    >
-      <View style={styles.card}>
-        <Image source={{ uri: product.imageCover }} style={styles.cardImage} />
-        <View style={styles.cardDetails}>
-          <Text style={styles.cardTitle}>{product.name}</Text>
-          <Text style={styles.cardCategory}>{product.categories}</Text>
-          <Text style={styles.cardPrice}>${product.price}</Text>
+  const Card = ({ product }) => {
+    return (
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => navigation.navigate("DetailsScreen", { product })}
+      >
+        <View style={styles.card}>
+          <View style={styles.priceTag}>
+            <Text
+              style={{ color: COLORS.white, fontSize: 20, fontWeight: "bold" }}
+            >
+              ${product.price}
+            </Text>
+          </View>
+          <Image
+            source={{ uri: product.imageCover }}
+            style={styles.cardImage}
+          />
+          <View style={styles.cardDetails}>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <View>
+                <Text style={{ fontWeight: "bold", fontSize: 17 }}>
+                  {product.name}
+                </Text>
+                <Text style={{ color: COLORS.grey, fontSize: 12 }}>
+                  {product.categories}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                marginTop: 10,
+              }}
+            >
+              <View style={{ flexDirection: "row" }}>
+                {Array(Math.floor(product.ratingsAverage))
+                  .fill(0)
+                  .map((_, index) => (
+                    <Icon
+                      key={index}
+                      name="star"
+                      size={15}
+                      color={COLORS.orange}
+                    />
+                  ))}
+                {Array(5 - Math.floor(product.ratingsAverage))
+                  .fill(0)
+                  .map((_, index) => (
+                    <Icon
+                      key={index}
+                      name="star"
+                      size={15}
+                      color={COLORS.grey}
+                    />
+                  ))}
+              </View>
+              <Text style={{ fontSize: 10, color: COLORS.grey }}>
+                {product.ratingsQuantity} reviews
+              </Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  const TopProductCard = ({ product }) => {
+    return (
+      <View style={styles.topProductCard}>
+        <View
+          style={{
+            position: "absolute",
+            top: 5,
+            right: 5,
+            zIndex: 1,
+            flexDirection: "row",
+          }}
+        >
+          <Icon name="star" size={15} color={COLORS.orange} />
+          <Text
+            style={{ color: COLORS.white, fontWeight: "bold", fontSize: 15 }}
+          >
+            {product.ratingsAverage.toFixed(1)}
+          </Text>
+        </View>
+        <Image
+          style={styles.topProductCardImage}
+          source={{ uri: product.imageCover }}
+        />
+        <View style={{ paddingVertical: 5, paddingHorizontal: 10 }}>
+          <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+            {product.name}
+          </Text>
+          <Text style={{ fontSize: 7, fontWeight: "bold", color: COLORS.grey }}>
+            {product.categories}
+          </Text>
+          <Text style={{ fontSize: 12, fontWeight: "bold" }}>
+            {" "}
+            ${product.price}
+          </Text>
         </View>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.userInfo}>
-        <Icon name="person" size={24} color={COLORS.grey} />
+        <Icon name="person-outline" size={38} color={COLORS.grey} />
         <Text style={styles.userName}>
           {currentlyLoggedIn
             ? `Bienvenue, ${currentlyLoggedIn.name}`
             : "No user logged in"}
         </Text>
       </View>
-      <Text style={styles.headerText}>Touvez vos produits chez nous</Text>
-      <View style={styles.searchContainer}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Trouvez Votre</Text>
+        <Text style={{ ...styles.headerText, color: COLORS.primary }}>
+          Produit
+        </Text>
+        <Text style={styles.headerText}>ICI</Text>
+
+        <Image
+          source={require("./../../../assets/favicon.png")}
+          style={styles.headerImage}
+        />
+      </View>
+      <View style={styles.searchInputContainer}>
         <Icon name="search" size={30} style={styles.searchIcon} />
         <TextInput
           placeholder="Search"
@@ -179,6 +291,7 @@ const HomeScreen = ({ navigation }) => {
           onChangeText={handleSearch}
         />
       </View>
+
       {searchResults.length > 0 && (
         <View style={styles.searchResultsContainer}>
           {searchResults.map((product) => (
@@ -186,66 +299,53 @@ const HomeScreen = ({ navigation }) => {
               key={product._id}
               onPress={() => navigation.navigate("DetailsScreen", { product })}
             >
-              <Text style={styles.searchResultItem}>{product.name}</Text>
+              <View style={styles.searchResultItem}>
+                <Image
+                  source={{ uri: product.imageCover }}
+                  style={styles.searchResultImage}
+                />
+                <Text style={styles.searchResultText}>{product.name}</Text>
+              </View>
             </TouchableOpacity>
           ))}
         </View>
       )}
-
-      {/* Carousel */}
-      <Text style={styles.headerText1}>Nouveaux Arrivage</Text>
-      <Carousel />
-
-      {/* Top Products Section */}
-      <Text style={styles.headerText}>Meilleur 5 Produits</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.cardsContainer}
-      >
-        {topProducts.map((product, index) => (
-          <Card key={index} product={product} />
-        ))}
-      </ScrollView>
-
-      {/* Category Section */}
-      <View style={styles.categoryContainer}>
-        <TouchableOpacity
-          style={styles.categoryItem}
-          onPress={() => setCategory("All")}
-        >
-          <Text style={styles.categoryText}>All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.categoryItem}
-          onPress={() => setCategory("Populaire")}
-        >
-          <Text style={styles.categoryText}>Populaire</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.categoryItem}
-          onPress={() => setCategory("Cher")}
-        >
-          <Text style={styles.categoryText}>Cher</Text>
-        </TouchableOpacity>
+      <View style={{ marginTop: 20 }}>
+        <Carousel data={topProducts} />
       </View>
 
-      {/* Products Section */}
-      <ScrollView
+      <View style={styles.topProductsList}>
+        {topProducts.map((product) => (
+          <TopProductCard product={product} key={product._id} />
+        ))}
+      </View>
+      <View style={styles.categoriesContainer}>
+        {["All", "Populaire", "Cher"].map((item) => (
+          <TouchableOpacity key={item} onPress={() => setCategory(item)}>
+            <Text
+              style={[
+                styles.categoryText,
+                category === item && styles.categoryTextSelected,
+              ]}
+            >
+              {item}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <FlatList
+        contentContainerStyle={styles.productList}
+        data={products}
+        renderItem={({ item }) => <Card product={item} />}
+        keyExtractor={(item) => item._id}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.cardsContainer}
-      >
-        {products.map((product, index) => (
-          <Card key={index} product={product} />
-        ))}
-      </ScrollView>
+      />
 
       {/* Map View */}
-      <Text style={styles.headerText}>Ou nous Trouvez</Text>
-      <View style={styles.mapContainer}>
-        <MapViewComponent />
-      </View>
+      <Text style={styles.headerTextMap}>Ou Nous Trouvez</Text>
+
+      <MapViewComponent />
 
       <TouchableOpacity
         style={styles.chatIconContainer}
@@ -253,139 +353,179 @@ const HomeScreen = ({ navigation }) => {
       >
         <Icon name="chat" size={30} color={COLORS.primary} />
       </TouchableOpacity>
+
+      {/* footer*/}
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>© 2024 SAKLY CIE</Text>
+        <View style={styles.footerLinks}>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("https://www.facebook.com")}
+            style={{ marginRight: 30 }}
+          >
+            <FontAwesome5 name="facebook" size={30} color="#143869" />
+            {/* Dark blue color */}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => Linking.openURL("https://www.instagram.com")}
+          >
+            <FontAwesome5 name="instagram" size={30} color="#E1306C" />
+            {/* Dark pink color */}
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
     backgroundColor: COLORS.white,
-    paddingBottom: 20,
+    flexGrow: 1,
+    justifyContent: "space-between",
   },
   userInfo: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
     paddingHorizontal: 20,
-    top: 5,
+    paddingVertical: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   userName: {
+    fontSize: 15,
+    fontWeight: "bold",
     marginLeft: 10,
-    fontSize: 16,
-    fontWeight: "bold",
-    color: COLORS.grey,
   },
-  headerText1: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: COLORS.orange,
-    marginBottom: 20,
+  header: {
     paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: COLORS.light,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    marginBottom: 10,
   },
   headerText: {
     fontSize: 24,
     fontWeight: "bold",
-    color: COLORS.primary,
-    marginBottom: 20,
-    paddingHorizontal: 20,
   },
-  searchContainer: {
+  headerTextMap: {
+    fontSize: 24,
+    fontWeight: "bold",
+    alignSelf: "center",
+  },
+  headerImage: {
+    width: 50,
+    height: 50,
+    top: -80,
+    left: 270,
+  },
+  searchInputContainer: {
+    height: 50,
+    backgroundColor: COLORS.light,
+    marginHorizontal: 20,
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: COLORS.light,
-    borderRadius: 30,
-    paddingLeft: 20,
+    paddingHorizontal: 20,
     marginBottom: 20,
-    marginHorizontal: 20,
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
-    fontSize: 20,
-    paddingVertical: 10,
     flex: 1,
+    fontSize: 18,
   },
   searchResultsContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
     marginHorizontal: 20,
-    marginBottom: 20,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    borderRadius: 10,
+    borderWidth: 1,
   },
   searchResultItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.light,
-  },
-  categoryContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 20,
-    paddingHorizontal: 20,
-  },
-  categoryItem: {
-    paddingHorizontal: 20,
+    alignItems: "center",
     paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: COLORS.light,
+  },
+  searchResultImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  searchResultText: {
+    fontSize: 16,
+  },
+  topProductCard: {
+    height: 150,
+    width: 120,
+    backgroundColor: COLORS.white,
+    elevation: 15,
+    borderRadius: 10,
+    marginHorizontal: 10,
+  },
+  topProductCardImage: {
+    width: "100%",
+    height: 80,
+    borderRadius: 10,
+  },
+  topProductsList: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 20,
+  },
+  categoriesContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginVertical: 20,
   },
   categoryText: {
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: "bold",
-    color: COLORS.primary,
+    color: COLORS.grey,
+    marginHorizontal: 10,
   },
-  cardsContainer: {
-    paddingRight: 20,
+  categoryTextSelected: {
+    color: COLORS.primary,
+    borderBottomWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  productList: {
+    paddingHorizontal: 20,
   },
   card: {
     height: 280,
     width: cardWidth,
+    elevation: 15,
     borderRadius: 15,
-    marginRight: 20,
     backgroundColor: COLORS.white,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
+    marginRight: 20,
+    padding: 15,
   },
   cardImage: {
+    height: 150,
+    borderRadius: 15,
     width: "100%",
-    height: 200,
+  },
+  priceTag: {
+    height: 60,
+    width: 80,
+    backgroundColor: COLORS.primary,
+    position: "absolute",
+    zIndex: 1,
+    top: 0,
+    left: 0,
     borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    borderBottomRightRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
   },
   cardDetails: {
+    height: 100,
+    borderRadius: 15,
+    backgroundColor: COLORS.white,
+    position: "absolute",
+    bottom: 0,
     padding: 15,
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  cardCategory: {
-    fontSize: 14,
-    color: COLORS.grey,
-    marginTop: 5,
-  },
-  cardPrice: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 5,
-  },
-  mapContainer: {
-    height: 300,
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 20,
-    overflow: "hidden",
+    width: "100%",
   },
   chatIconContainer: {
     position: "absolute",
@@ -399,6 +539,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 5,
+  },
+  footer: {
+    padding: 20,
+    alignItems: "center",
+    bottom: 0,
+    width: "100%",
+    alignContent: "space-evenly ",
+  },
+  footerText: {
+    fontSize: 12,
+    color: COLORS.grey,
+  },
+  footerLinks: {
+    flexDirection: "row",
+    marginTop: 10,
+    alignContent: "space-between ",
+    alignItems: "center",
   },
 });
 

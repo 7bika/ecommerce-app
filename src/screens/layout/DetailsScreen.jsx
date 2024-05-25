@@ -141,7 +141,7 @@ const DetailsScreen = ({ navigation, route }) => {
           <Text style={{ fontSize: 20, fontWeight: "bold" }}>{item.name}</Text>
           <Text
             style={{
-              fontSize: 12,
+              fontSize: 15,
               fontWeight: "400",
               color: COLORS.grey,
               marginTop: 5,
@@ -173,7 +173,7 @@ const DetailsScreen = ({ navigation, route }) => {
                 {item.rating}
               </Text>
             </View>
-            <Text style={{ fontSize: 13, color: COLORS.grey }}>
+            <Text style={{ fontSize: 18, color: COLORS.black }}>
               {reviews.length} reviews
             </Text>
           </View>
@@ -244,13 +244,14 @@ const DetailsScreen = ({ navigation, route }) => {
             justifyContent: "space-between",
             paddingLeft: 20,
             alignItems: "center",
+            marginBottom: 20,
           }}
         >
-          <Text style={{ fontSize: 20, fontWeight: "bold" }}>Prix</Text>
+          <Text style={{ fontSize: 28, fontWeight: "bold" }}>Prix</Text>
           <View style={style.priceTag}>
             <Text
               style={{
-                fontSize: 16,
+                fontSize: 22,
                 fontWeight: "bold",
                 color: COLORS.grey,
                 marginLeft: 5,
@@ -260,7 +261,7 @@ const DetailsScreen = ({ navigation, route }) => {
             </Text>
             <Text
               style={{
-                fontSize: 12,
+                fontSize: 15,
                 fontWeight: "bold",
                 color: COLORS.grey,
                 marginLeft: 5,
@@ -338,7 +339,7 @@ const style = StyleSheet.create({
     backgroundColor: COLORS.light,
     padding: 10,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   reviewHeader: {
     flexDirection: "row",
@@ -372,18 +373,20 @@ const style = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 15,
   },
   submitButtonText: {
     color: COLORS.white,
     fontWeight: "bold",
+    fontSize: 17,
   },
   priceTag: {
     backgroundColor: COLORS.primary,
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 15,
     alignItems: "center",
     flexDirection: "row",
+    borderEndStartRadius: 15,
   },
   btn: {
     backgroundColor: COLORS.primary,

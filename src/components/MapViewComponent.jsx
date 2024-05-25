@@ -13,6 +13,8 @@ const MapViewComponent = () => {
           latitudeDelta: 0.05,
           longitudeDelta: 0.05,
         }}
+        zoomEnabled={true} // Enable zoom
+        scrollEnabled={true} // Enable scroll
       >
         <Marker
           coordinate={{ latitude: 35.765064, longitude: 10.825595 }}

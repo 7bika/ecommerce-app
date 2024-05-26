@@ -3,35 +3,54 @@ import {
   ImageBackground,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   View,
   TextInput,
   TouchableOpacity,
   Alert,
+  Modal,
+  StyleSheet,
 } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import COLORS from "./../../constants/colors";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import CartContext from "../../contexts/CartContext";
 import FavoritesContext from "../../contexts/FavoritesContext";
+import { getToken } from "../../composable/local";
 
 const DetailsScreen = ({ navigation, route }) => {
   let item = route.params.product;
 
-  const { addToCart } = useContext(CartContext); // Use CartContext
+  const { addToCart } = useContext(CartContext);
   const { addToFavorites, removeFromFavorites, isFavorite } =
     useContext(FavoritesContext);
 
   const [isBookmarked, setIsBookmarked] = useState(false);
-
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [reviewToDelete, setReviewToDelete] = useState(null);
+  const [editingReview, setEditingReview] = useState(null);
+  const [currentlyLoggedIn, setCurrentlyLoggedIn] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchReviews(item.id);
+    const fetchData = async () => {
+      await fetchUserProfile();
+      await fetchReviews(item.id);
+      setLoading(false);
+    };
+
+    fetchData();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserProfile();
+    }, [])
+  );
 
   useEffect(() => {
     setIsBookmarked(isFavorite(item.id));
@@ -46,6 +65,35 @@ const DetailsScreen = ({ navigation, route }) => {
     setIsBookmarked(!isBookmarked);
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}users/me`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentlyLoggedIn(data.data.user);
+      } else {
+        throw new Error("Failed to fetch user profile");
+      }
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+      Alert.alert(
+        "Error",
+        "An error occurred while fetching the user profile."
+      );
+    }
+  };
+
   const fetchReviews = async (productId) => {
     try {
       const response = await fetch(
@@ -55,7 +103,7 @@ const DetailsScreen = ({ navigation, route }) => {
         throw new Error("Failed to fetch reviews");
       }
       const data = await response.json();
-      setReviews(data.data.documents);
+      setReviews(data.data.reviews);
     } catch (error) {
       console.error("Error fetching reviews:", error);
     }
@@ -68,12 +116,14 @@ const DetailsScreen = ({ navigation, route }) => {
     }
 
     try {
+      const token = await getToken();
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}products/${item.id}/reviews`,
+        `${process.env.EXPO_PUBLIC_API_URL}products/${item._id}/reviews`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             rating: newRating,
@@ -95,10 +145,101 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
-  const handleAddToCart = () => {
-    addToCart({ ...item, quantity }); // Add item to cart with quantity
-    navigation.navigate("CartScreen"); // Navigate to CartScreen
+  const handleDeleteReview = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}reviews/${reviewToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to delete review");
+      }
+      setReviews((prevReviews) =>
+        prevReviews.filter((review) => review._id !== reviewToDelete)
+      );
+      setReviewToDelete(null);
+      setModalVisible(false);
+      Alert.alert("Success", "Your review has been deleted.");
+    } catch (error) {
+      console.error("Error deleting review:", error);
+      Alert.alert("Error", "An error occurred while deleting your review.");
+    }
   };
+
+  const handleUpdateReview = async () => {
+    if (newRating === 0 || newReview === "") {
+      Alert.alert("Error", "Please provide a rating and a review.");
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}reviews/${editingReview._id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            rating: newRating,
+            review: newReview,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to update review");
+      }
+      const data = await response.json();
+      setReviews((prevReviews) =>
+        prevReviews.map((review) =>
+          review._id === editingReview._id ? data.data.review : review
+        )
+      );
+      setEditingReview(null);
+      setNewReview("");
+      setNewRating(0);
+      Alert.alert("Success", "Your review has been updated.");
+    } catch (error) {
+      console.error("Error updating review:", error);
+      Alert.alert("Error", "An error occurred while updating your review.");
+    }
+  };
+
+  const handleAddToCart = () => {
+    addToCart({ ...item, quantity });
+    navigation.navigate("CartScreen");
+  };
+
+  const handleEditReview = (review) => {
+    if (!currentlyLoggedIn) return;
+    setEditingReview(review);
+    setNewReview(review.review);
+    setNewRating(review.rating);
+  };
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          color: COLORS.black,
+        }}
+      >
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -191,6 +332,24 @@ const DetailsScreen = ({ navigation, route }) => {
                 <Text style={style.reviewDate}>
                   {new Date(review.createdAt).toLocaleDateString()}
                 </Text>
+                {currentlyLoggedIn &&
+                  review.user._id === currentlyLoggedIn._id && (
+                    <View style={style.reviewActions}>
+                      <TouchableOpacity
+                        onPress={() => handleEditReview(review)}
+                      >
+                        <Icon name="edit" size={20} color={COLORS.grey} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setReviewToDelete(review._id);
+                          setModalVisible(true);
+                        }}
+                      >
+                        <Icon name="delete" size={20} color={COLORS.red} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
               </View>
               <View style={style.reviewStars}>
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -206,9 +365,10 @@ const DetailsScreen = ({ navigation, route }) => {
             </View>
           ))}
         </View>
+
         <View style={{ marginHorizontal: 20, marginTop: 20 }}>
           <Text style={{ fontSize: 20, fontWeight: "bold" }}>
-            Ajouter un Review
+            {editingReview ? "Edit Review" : "Add a Review"}
           </Text>
           <View style={style.reviewStars}>
             {Array.from({ length: 5 }).map((_, index) => (
@@ -232,9 +392,11 @@ const DetailsScreen = ({ navigation, route }) => {
           />
           <TouchableOpacity
             style={style.submitButton}
-            onPress={handleReviewSubmit}
+            onPress={editingReview ? handleUpdateReview : handleReviewSubmit}
           >
-            <Text style={style.submitButtonText}>Submit Review</Text>
+            <Text style={style.submitButtonText}>
+              {editingReview ? "Update Review" : "Submit Review"}
+            </Text>
           </TouchableOpacity>
         </View>
         <View
@@ -302,6 +464,36 @@ const DetailsScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
       </View>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={style.centeredView}>
+          <View style={style.modalView}>
+            <Text style={style.modalText}>
+              Êtes-vous sûr de vouloir supprimer ce commentaire ?
+            </Text>
+            <View style={style.modalButtonContainer}>
+              <TouchableOpacity
+                style={[style.button, style.buttonClose]}
+                onPress={() => setModalVisible(!modalVisible)}
+              >
+                <Text style={style.textStyle}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[style.button, style.buttonDelete]}
+                onPress={handleDeleteReview}
+              >
+                <Text style={style.textStyle}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -352,7 +544,10 @@ const style = StyleSheet.create({
   },
   reviewDate: {
     fontSize: 12,
-    color: COLORS.grey,
+    color: COLORS.black,
+  },
+  reviewActions: {
+    flexDirection: "row",
   },
   reviewStars: {
     flexDirection: "row",
@@ -397,6 +592,51 @@ const style = StyleSheet.create({
     padding: 15,
     marginHorizontal: 20,
     marginTop: 20,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+    marginHorizontal: 10,
+  },
+  buttonClose: {
+    backgroundColor: COLORS.primary,
+  },
+  buttonDelete: {
+    backgroundColor: COLORS.red,
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
   },
 });
 

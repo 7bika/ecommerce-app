@@ -34,16 +34,22 @@ const HomeScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState("Populaire");
+
+  const [type, setType] = useState("Tous");
+  const [productsFiltered, setProductsFiltered] = useState([]);
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollX = React.useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    fetchUserProfile();
     fetchTopProducts();
     fetchProducts();
   }, [category]);
+
+  useEffect(() => {
+    fetchProductsByCategories();
+  }, [type]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -80,14 +86,50 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
+  const fetchProductsByCategories = async () => {
+    try {
+      let url = `${process.env.EXPO_PUBLIC_API_URL}products`;
+
+      if (type !== "Tous") {
+        url += `?categories=${type}`;
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      const data = await response.json();
+      setProductsFiltered(data.data.documents);
+    } catch (error) {
+      console.error("Error fetching products by categories:", error);
+      Alert.alert("Error", "An error occurred while fetching the products.");
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       let url = `${process.env.EXPO_PUBLIC_API_URL}products`;
 
       if (category === "Populaire") {
-        url += "?ratingsAverage[gte]=4";
+        url += "?ratingsQuantity[gte]=2";
       } else if (category === "Cher") {
         url += "?price[gte]=100&price[lte]=170";
+      } else if (category === "Meilleure Notés") {
+        url += "?ratingsAverage[gte]=4.4";
+      }
+
+      // types with categories
+      if (type !== "Tous") {
+        url += url.includes("?") ? "&" : "?";
+        if (type === "fouta") {
+          url += "?categories=fouta";
+        } else if (type === "tapis-long") {
+          url += "?categories=tapis-long";
+        } else if (type === "tapis à pieds") {
+          url += "?categories=tapis à pieds";
+        } else if (type === "kim") {
+          url += "?categories=kim";
+        }
       }
 
       const response = await fetch(url);
@@ -211,7 +253,7 @@ const HomeScreen = ({ navigation }) => {
                     />
                   ))}
               </View>
-              <Text style={{ fontSize: 10, color: COLORS.grey }}>
+              <Text style={{ fontSize: 12, color: COLORS.grey }}>
                 {product.ratingsQuantity} reviews
               </Text>
             </View>
@@ -235,7 +277,12 @@ const HomeScreen = ({ navigation }) => {
         >
           <Icon name="star" size={15} color={COLORS.orange} />
           <Text
-            style={{ color: COLORS.white, fontWeight: "bold", fontSize: 15 }}
+            style={{
+              color: COLORS.grayLight,
+              fontWeight: "bold",
+              fontSize: 15,
+              top: -3,
+            }}
           >
             {product.ratingsAverage.toFixed(1)}
           </Text>
@@ -245,14 +292,15 @@ const HomeScreen = ({ navigation }) => {
           source={{ uri: product.imageCover }}
         />
         <View style={{ paddingVertical: 5, paddingHorizontal: 10 }}>
-          <Text style={{ fontSize: 10, fontWeight: "bold" }}>
+          <Text style={{ fontSize: 14, fontWeight: "bold" }}>
             {product.name}
           </Text>
-          <Text style={{ fontSize: 7, fontWeight: "bold", color: COLORS.grey }}>
+          <Text
+            style={{ fontSize: 10, fontWeight: "bold", color: COLORS.grey }}
+          >
             {product.categories}
           </Text>
           <Text style={{ fontSize: 12, fontWeight: "bold" }}>
-            {" "}
             ${product.price}
           </Text>
         </View>
@@ -305,6 +353,7 @@ const HomeScreen = ({ navigation }) => {
                   style={styles.searchResultImage}
                 />
                 <Text style={styles.searchResultText}>{product.name}</Text>
+                <Text style={styles.searchResultText}> {product.price}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -314,13 +363,18 @@ const HomeScreen = ({ navigation }) => {
         <Carousel data={topProducts} />
       </View>
 
-      <View style={styles.topProductsList}>
-        {topProducts.map((product) => (
-          <TopProductCard product={product} key={product._id} />
-        ))}
-      </View>
+      <Text style={styles.topProductsHeader}>Notre Peu Cher Produits</Text>
+      <FlatList
+        data={topProducts}
+        renderItem={({ item }) => <TopProductCard product={item} />}
+        keyExtractor={(item) => item._id}
+        horizontal
+        showsHorizontalScrollIndicator={true}
+        contentContainerStyle={styles.topProductsList}
+      />
+
       <View style={styles.categoriesContainer}>
-        {["All", "Populaire", "Cher"].map((item) => (
+        {["Populaire", "Cher", "Meilleure Notés"].map((item) => (
           <TouchableOpacity key={item} onPress={() => setCategory(item)}>
             <Text
               style={[
@@ -333,6 +387,7 @@ const HomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         ))}
       </View>
+
       <FlatList
         contentContainerStyle={styles.productList}
         data={products}
@@ -341,6 +396,51 @@ const HomeScreen = ({ navigation }) => {
         horizontal
         showsHorizontalScrollIndicator={false}
       />
+
+      {/*  new view */}
+      <View style={styles.typesContainer}>
+        <Text style={styles.typesHeaderText}>Tous les Catégories</Text>
+        <View style={styles.typesWrapper}>
+          {["Tous", "fouta", "tapis à pieds", "tapis-long", "kim"].map(
+            (item) => (
+              <TouchableOpacity key={item} onPress={() => setType(item)}>
+                <Text
+                  style={[
+                    styles.categoryText,
+                    type === item && styles.categoryTextSelected,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </TouchableOpacity>
+            )
+          )}
+        </View>
+        <View style={styles.filteredProductsContainer}>
+          {productsFiltered.map((product) => (
+            <TouchableOpacity
+              key={product._id}
+              onPress={() => navigation.navigate("DetailsScreen", { product })}
+            >
+              <View style={styles.filteredProductCard}>
+                <Image
+                  source={{ uri: product.imageCover }}
+                  style={styles.filteredProductImage}
+                />
+                <View style={styles.filteredProductDetails}>
+                  <Text style={styles.filteredProductName}>{product.name}</Text>
+                  <Text style={styles.filteredProductCategory}>
+                    {product.categories}
+                  </Text>
+                  <Text style={styles.filteredProductPrice}>
+                    ${product.price}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       {/* Map View */}
       <Text style={styles.headerTextMap}>Ou Nous Trouvez</Text>
@@ -420,7 +520,7 @@ const styles = StyleSheet.create({
   },
   searchInputContainer: {
     height: 50,
-    backgroundColor: COLORS.light,
+    backgroundColor: COLORS.grayLight,
     marginHorizontal: 20,
     borderRadius: 10,
     flexDirection: "row",
@@ -436,6 +536,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   searchResultsContainer: {
+    backgroundColor: COLORS.light,
     marginHorizontal: 20,
     borderRadius: 10,
     borderWidth: 1,
@@ -454,18 +555,36 @@ const styles = StyleSheet.create({
   searchResultText: {
     fontSize: 16,
   },
+  topProductsHeader: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: COLORS.black,
+    marginHorizontal: 20,
+    marginVertical: 15,
+  },
   topProductCard: {
-    height: 150,
-    width: 120,
-    backgroundColor: COLORS.white,
-    elevation: 15,
+    width: 150,
+    height: 220,
     borderRadius: 10,
-    marginHorizontal: 10,
+    backgroundColor: COLORS.white,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+    marginRight: 20,
+    overflow: "hidden",
+    margin: 20,
   },
   topProductCardImage: {
     width: "100%",
-    height: 80,
-    borderRadius: 10,
+    height: 120,
+  },
+  topProductsContainer: {
+    paddingVertical: 10,
   },
   topProductsList: {
     flexDirection: "row",
@@ -499,6 +618,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     marginRight: 20,
     padding: 15,
+    margin: 10,
   },
   cardImage: {
     height: 150,
@@ -527,6 +647,62 @@ const styles = StyleSheet.create({
     padding: 15,
     width: "100%",
   },
+
+  // new
+  typesContainer: {
+    padding: 20,
+    backgroundColor: COLORS.light,
+    borderRadius: 10,
+    marginHorizontal: 20,
+    marginVertical: 20,
+  },
+  typesHeaderText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  filteredProductsContainer: {
+    marginTop: 20,
+  },
+  filteredProductCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 4,
+  },
+  filteredProductImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  filteredProductDetails: {
+    flex: 1,
+  },
+  filteredProductName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  filteredProductCategory: {
+    fontSize: 14,
+    color: COLORS.grey,
+  },
+  filteredProductPrice: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    marginTop: 5,
+  },
   chatIconContainer: {
     position: "absolute",
     bottom: 20,
@@ -546,6 +722,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     alignContent: "space-evenly ",
+    backgroundColor: COLORS.light,
   },
   footerText: {
     fontSize: 12,

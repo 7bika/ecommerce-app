@@ -118,7 +118,7 @@ const CartScreen = ({ navigation }) => {
       Alert.alert("Success", "Order created successfully.");
       clearCart();
       setModalVisible(false);
-      nav.navigate("Home", {
+      nav.navigate("BottomTab", {
         orderId: data.data._id,
       });
     } catch (error) {

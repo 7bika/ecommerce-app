@@ -64,39 +64,39 @@ const OnBoardingScreen = () => {
           backgroundColor: "#fff",
           image: (
             <Image
-              source={require("./../../../assets/favicon.png")}
+              source={require("./../../../assets/01.png")}
               style={styles.image}
             />
           ),
-          title: "Plan Your Trip",
+          title: "Choisissez ce Que vous voulez",
           titleStyles: styles.title,
-          subtitle: "Plan Your Trip",
+          subtitle: "Plannification",
           subtitleStyles: styles.subtitle,
         },
         {
           backgroundColor: "#fff",
           image: (
             <Image
-              source={require("./../../../assets/favicon.png")}
+              source={require("./../../../assets/02.png")}
               style={styles.image}
             />
           ),
-          title: "Select the Date",
+          title: "Des Offres , Des Promos et du Bonne Qualité",
           titleStyles: styles.title,
-          subtitle: "Select The Date You Like",
+          subtitle: "Selectionner en toute sécurité",
           subtitleStyles: styles.subtitle,
         },
         {
           backgroundColor: "#fff",
           image: (
             <Image
-              source={require("./../../../assets/favicon.png")}
+              source={require("./../../../assets/03.png")}
               style={styles.image}
             />
           ),
-          title: "Experience New Things",
+          title: "Experiencer une nouvelle style d'achat",
           titleStyles: styles.title,
-          subtitle: "Ready To Experience New Things?\nLET'S GET STARTED!",
+          subtitle: "Etes vous pret?\nLET'S GET STARTED!",
           subtitleStyles: styles.subtitle,
         },
       ]}

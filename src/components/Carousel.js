@@ -6,9 +6,10 @@ const { width } = Dimensions.get("window");
 const imageWidth = width - 40;
 
 const images = [
-  require("./../../assets/favicon.png"),
-  require("./../../assets/icon.png"),
-  require("./../../assets/splash.png"),
+  require("./../../assets/product11.jpg"),
+  require("./../../assets/product1.jpg"),
+  require("./../../assets/product5.jpg"),
+  require("./../../assets/product6.jpg"),
 ];
 
 const Carousel = () => {
@@ -51,7 +52,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   image: {
-    width: imageWidth,
+    width: "120%",
     height: "100%",
     resizeMode: "contain",
   },

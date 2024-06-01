@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   Alert,
   ScrollView,
@@ -81,21 +80,28 @@ const HistoryScreen = () => {
                   {order.shippingAddress.city}
                 </Text>
                 <Text style={styles.label}>Products:</Text>
-                {order.orderItems.map((item) => (
-                  <View key={item._id} style={styles.productContainer}>
-                    <Text style={styles.productText}>
-                      <Text style={styles.label}>Produit:</Text>
-                      {item.product.name}
+                {order.orderItems.map((item) =>
+                  item.product ? (
+                    <View key={item._id} style={styles.productContainer}>
+                      <Text style={styles.productText}>
+                        <Text style={styles.label}>Produit: </Text>
+                        {item.product.name}
+                      </Text>
+                      <Text style={styles.productText}>
+                        <Text style={styles.label}>Quantité: </Text>
+                        {item.quantity}
+                      </Text>
+                      <Text style={styles.productText}>
+                        <Text style={styles.label}>Prix: </Text> ${item.price}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text key={item._id} style={styles.productText}>
+                      <Text style={styles.label}>Produit: </Text>
+                      Information du produit manquante
                     </Text>
-                    <Text style={styles.productText}>
-                      <Text style={styles.label}>Quantité:</Text>{" "}
-                      {item.quantity}
-                    </Text>
-                    <Text style={styles.productText}>
-                      <Text style={styles.label}>Prix:</Text> ${item.price}
-                    </Text>
-                  </View>
-                ))}
+                  )
+                )}
                 <Text style={styles.text}>
                   <Text style={styles.label}>Prix Totale du Commande: </Text>$
                   {order.totalPrice}

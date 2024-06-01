@@ -27,6 +27,8 @@ import Carousel from "../../components/Carousel";
 const { width } = Dimensions.get("screen");
 const cardWidth = width / 1.8;
 
+//const API_URL = "http://192.168.1.9";
+
 const HomeScreen = ({ navigation }) => {
   const { loading } = useContext(AuthContext);
   const [currentlyLoggedIn, setCurrentlyLoggedIn] = useState(null);
@@ -38,6 +40,8 @@ const HomeScreen = ({ navigation }) => {
 
   const [type, setType] = useState("Tous");
   const [productsFiltered, setProductsFiltered] = useState([]);
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollX = React.useRef(new Animated.Value(0)).current;
@@ -143,6 +147,7 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert("Error", "An error occurred while fetching the products.");
     }
   };
+  console.log(products, "aaaa");
 
   const fetchTopProducts = async () => {
     try {
@@ -193,6 +198,26 @@ const HomeScreen = ({ navigation }) => {
     return <ActivityIndicator size="large" color="#0000ff" />;
   }
 
+  // pagination
+  const itemsPerPage = 5;
+  const paginateProducts = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return productsFiltered.slice(startIndex, endIndex);
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < Math.ceil(productsFiltered.length / itemsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
   const Card = ({ product }) => {
     return (
       <TouchableOpacity
@@ -208,7 +233,9 @@ const HomeScreen = ({ navigation }) => {
             </Text>
           </View>
           <Image
-            source={{ uri: product.imageCover }}
+            source={{
+              uri: product.imageCover,
+            }}
             style={styles.cardImage}
           />
           <View style={styles.cardDetails}>
@@ -278,7 +305,7 @@ const HomeScreen = ({ navigation }) => {
           <Icon name="star" size={15} color={COLORS.orange} />
           <Text
             style={{
-              color: COLORS.grayLight,
+              color: COLORS.black,
               fontWeight: "bold",
               fontSize: 15,
               top: -3,
@@ -289,7 +316,9 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <Image
           style={styles.topProductCardImage}
-          source={{ uri: product.imageCover }}
+          source={{
+            uri: product.imageCover,
+          }}
         />
         <View style={{ paddingVertical: 5, paddingHorizontal: 10 }}>
           <Text style={{ fontSize: 14, fontWeight: "bold" }}>
@@ -326,7 +355,7 @@ const HomeScreen = ({ navigation }) => {
         <Text style={styles.headerText}>ICI</Text>
 
         <Image
-          source={require("./../../../assets/favicon.png")}
+          source={require("./../../../assets/logo.png")}
           style={styles.headerImage}
         />
       </View>
@@ -416,8 +445,9 @@ const HomeScreen = ({ navigation }) => {
             )
           )}
         </View>
-        <View style={styles.filteredProductsContainer}>
-          {productsFiltered.map((product) => (
+        <FlatList
+          data={paginateProducts()}
+          renderItem={({ item: product }) => (
             <TouchableOpacity
               key={product._id}
               onPress={() => navigation.navigate("DetailsScreen", { product })}
@@ -438,7 +468,30 @@ const HomeScreen = ({ navigation }) => {
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
+          )}
+          keyExtractor={(item) => item._id}
+        />
+        <View style={styles.paginationControls}>
+          <TouchableOpacity
+            onPress={handlePrevPage}
+            disabled={currentPage === 1}
+            style={styles.paginationButton}
+          >
+            <Text style={styles.paginationButtonText}>Précédent</Text>
+          </TouchableOpacity>
+          <Text style={styles.pageIndicator}>
+            Page {currentPage} of{" "}
+            {Math.ceil(productsFiltered.length / itemsPerPage)}
+          </Text>
+          <TouchableOpacity
+            onPress={handleNextPage}
+            disabled={
+              currentPage === Math.ceil(productsFiltered.length / itemsPerPage)
+            }
+            style={styles.paginationButton}
+          >
+            <Text style={styles.paginationButtonText}>Suivant</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -513,10 +566,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   headerImage: {
-    width: 50,
+    width: 220,
     height: 50,
-    top: -80,
-    left: 270,
+    top: -75,
+    left: 170,
   },
   searchInputContainer: {
     height: 50,
@@ -703,6 +756,26 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginTop: 5,
   },
+  //pagination
+  paginationControls: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 10,
+  },
+  paginationButton: {
+    padding: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 5,
+  },
+  paginationButtonText: {
+    color: COLORS.white,
+    fontSize: 16,
+  },
+  pageIndicator: {
+    fontSize: 16,
+  },
+
   chatIconContainer: {
     position: "absolute",
     bottom: 20,

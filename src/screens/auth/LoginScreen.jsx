@@ -86,7 +86,7 @@ const LoginScreen = ({ navigation, route }) => {
       <View style={styles.innerContainer}>
         <View style={styles.logo}>
           <Image
-            source={require("./../../../assets/favicon.png")}
+            source={require("./../../../assets/logo.png")}
             style={styles.logoImage}
           />
         </View>
@@ -221,8 +221,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   logoImage: {
-    width: 80,
-    height: 80,
+    width: 250,
+    height: 120,
   },
   title: {
     fontSize: 22,

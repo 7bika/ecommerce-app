@@ -17,11 +17,13 @@ import CartContext from "../../contexts/CartContext";
 import { getToken } from "../../composable/local";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useNavigation } from "@react-navigation/native";
+import { useStripe } from "@stripe/stripe-react-native";
 
 const CartScreen = ({ navigation }) => {
   const { cart, updateQuantity, removeFromCart, clearCart } =
     useContext(CartContext);
   const nav = useNavigation();
+  const stripe = useStripe();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [mobileNumber, setMobileNumber] = useState("");
@@ -77,16 +79,13 @@ const CartScreen = ({ navigation }) => {
     return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
-  const handleCheckout = async () => {
-    if (!mobileNumber || !address || !city || !postalCode || !country) {
-      Alert.alert("Error", "Veuillez remplir tous les champs");
-      return;
-    }
+  console.log(items, "item");
 
+  const createOrder = async () => {
     const orderData = {
       user: user._id,
       orderItems: cart.map((item) => ({
-        product: item.id,
+        product: item._id,
         quantity: item.quantity,
         price: item.price,
       })),
@@ -124,6 +123,62 @@ const CartScreen = ({ navigation }) => {
     } catch (error) {
       console.error("Error creating order:", error);
       Alert.alert("Error", "An error occurred while creating your order.");
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (!mobileNumber || !address || !city || !postalCode || !country) {
+      Alert.alert("Error", "Please fill all the fields");
+      return;
+    }
+
+    if (paymentMethod === "Credit Card") {
+      try {
+        const productId = cart[0]?.id; // Assuming single product in the cart for simplicity
+        const token = await getToken();
+
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}payments/create-checkout-session/${productId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`, // Add authorization header
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to create Stripe checkout session");
+        }
+
+        const { clientSecret } = await response.json(); // Update this line to match the backend response
+
+        const { error } = await stripe.initPaymentSheet({
+          paymentIntentClientSecret: clientSecret,
+          merchantDisplayName: "Your Merchant Name", // Add this line
+        });
+
+        if (error) {
+          Alert.alert("Error", error.message);
+        } else {
+          const { error } = await stripe.presentPaymentSheet();
+          if (error) {
+            Alert.alert("Error", error.message);
+          } else {
+            Alert.alert("Success", "Payment successful");
+            createOrder(); // Create the order after successful Stripe payment
+          }
+        }
+      } catch (error) {
+        console.error("Error creating Stripe checkout session:", error);
+        Alert.alert(
+          "Error",
+          "An error occurred while creating the payment session."
+        );
+      }
+    } else if (paymentMethod === "Cash on Delivery") {
+      createOrder();
     }
   };
 
@@ -176,7 +231,7 @@ const CartScreen = ({ navigation }) => {
               onPress={() => setModalVisible(true)}
               disabled={cart.length === 0}
             >
-              <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+              <Text style={styles.checkoutButtonText}>Confirmer l'achat</Text>
             </TouchableOpacity>
           </View>
         </>

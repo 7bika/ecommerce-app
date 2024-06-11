@@ -129,8 +129,8 @@ const HomeScreen = ({ navigation }) => {
           url += "?categories=fouta";
         } else if (type === "tapis-long") {
           url += "?categories=tapis-long";
-        } else if (type === "tapis à pieds") {
-          url += "?categories=tapis à pieds";
+        } else if (type === "tapis-à-pieds") {
+          url += "?categories=tapis-à-pieds";
         } else if (type === "kim") {
           url += "?categories=kim";
         }
@@ -430,7 +430,7 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.typesContainer}>
         <Text style={styles.typesHeaderText}>Tous les Catégories</Text>
         <View style={styles.typesWrapper}>
-          {["Tous", "fouta", "tapis à pieds", "tapis-long", "kim"].map(
+          {["Tous", "fouta", "tapis-à-pieds", "tapis-long", "kim"].map(
             (item) => (
               <TouchableOpacity key={item} onPress={() => setType(item)}>
                 <Text
@@ -500,15 +500,14 @@ const HomeScreen = ({ navigation }) => {
 
       <MapViewComponent />
 
-      <TouchableOpacity
-        style={styles.chatIconContainer}
-        onPress={() => navigation.navigate("ChatBot")}
-      >
-        <Icon name="chat" size={30} color={COLORS.primary} />
-      </TouchableOpacity>
-
       {/* footer*/}
       <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.chatIconContainer}
+          onPress={() => navigation.navigate("ChatBot")}
+        >
+          <Icon name="chat" size={30} color={COLORS.primary} />
+        </TouchableOpacity>
         <Text style={styles.footerText}>© 2024 SAKLY CIE</Text>
         <View style={styles.footerLinks}>
           <TouchableOpacity
@@ -567,7 +566,7 @@ const styles = StyleSheet.create({
   },
   headerImage: {
     width: 220,
-    height: 50,
+    height: 70,
     top: -75,
     left: 170,
   },

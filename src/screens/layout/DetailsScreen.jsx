@@ -94,6 +94,7 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  //fecth review
   const fetchReviews = async (productId) => {
     try {
       const response = await fetch(
@@ -109,6 +110,7 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  //submit review
   const handleReviewSubmit = async () => {
     if (newRating === 0 || newReview === "") {
       Alert.alert("Error", "Please provide a rating and a review.");
@@ -134,8 +136,8 @@ const DetailsScreen = ({ navigation, route }) => {
       if (!response.ok) {
         throw new Error("Failed to submit review");
       }
-      const data = await response.json();
-      setReviews((prevReviews) => [...prevReviews, data.data.review]);
+      await fetchReviews(item._id);
+      await fetchUserProfile();
       setNewReview("");
       setNewRating(0);
       Alert.alert("Success", "Your review has been submitted.");
@@ -145,6 +147,7 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  //delete
   const handleDeleteReview = async () => {
     try {
       const token = await getToken();
@@ -161,9 +164,8 @@ const DetailsScreen = ({ navigation, route }) => {
       if (!response.ok) {
         throw new Error("Failed to delete review");
       }
-      setReviews((prevReviews) =>
-        prevReviews.filter((review) => review._id !== reviewToDelete)
-      );
+      await fetchReviews(item._id);
+      await fetchUserProfile();
       setReviewToDelete(null);
       setModalVisible(false);
       Alert.alert("Success", "Your review has been deleted.");
@@ -173,6 +175,7 @@ const DetailsScreen = ({ navigation, route }) => {
     }
   };
 
+  //update
   const handleUpdateReview = async () => {
     if (newRating === 0 || newReview === "") {
       Alert.alert("Error", "Please provide a rating and a review.");
@@ -198,16 +201,12 @@ const DetailsScreen = ({ navigation, route }) => {
       if (!response.ok) {
         throw new Error("Failed to update review");
       }
-      const data = await response.json();
-      setReviews((prevReviews) =>
-        prevReviews.map((review) =>
-          review._id === editingReview._id ? data.data.review : review
-        )
-      );
+      await fetchReviews(item._id);
+      await fetchUserProfile();
       setEditingReview(null);
       setNewReview("");
       setNewRating(0);
-      Alert.alert("Success", "Your review has been updated.");
+      Alert.alert("Success", "Ton commentaire à été ajouté.");
     } catch (error) {
       console.error("Error updating review:", error);
       Alert.alert("Error", "An error occurred while updating your review.");

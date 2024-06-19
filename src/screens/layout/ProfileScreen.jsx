@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Alert,
   ImageBackground,
-  Image,
 } from "react-native";
 import { Avatar, Card } from "react-native-paper";
 import * as ImagePicker from "expo-image-picker";
@@ -18,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AuthContext } from "./../../contexts/AuthContext";
 
 const ProfileScreen = () => {
-  const { currentUser, handleLogout } = useContext(AuthContext);
+  const { handleLogout } = useContext(AuthContext);
   const navigation = useNavigation();
   const [userProfile, setUserProfile] = useState(null);
   const [profileImage, setProfileImage] = useState(null);
@@ -43,7 +42,7 @@ const ProfileScreen = () => {
 
       const data = await response.json();
       setUserProfile(data.data.user);
-      setProfileImage(data.data.user.photo);
+      setProfileImage(`${data.data.user.photo}`);
     } catch (error) {
       console.error("Error fetching user profile:", error);
       Alert.alert(
@@ -59,25 +58,39 @@ const ProfileScreen = () => {
     }, [])
   );
 
-  if (!userProfile) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  const askForMediaLibraryPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission to access media library is required!");
+      return false;
+    }
+    return true;
+  };
+
+  const askForCameraPermission = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission to access camera is required!");
+      return false;
+    }
+    return true;
+  };
 
   const handleSelectImageFromGallery = async () => {
+    const hasPermission = await askForMediaLibraryPermission();
+    if (!hasPermission) {
+      return;
+    }
     try {
       let result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 1,
       });
 
       if (!result.canceled) {
-        await handleImageUpload(result.uri);
+        await handleImageUpload(result.assets[0].uri);
       } else {
         Alert.alert("You did not select any image.");
       }
@@ -88,6 +101,10 @@ const ProfileScreen = () => {
   };
 
   const handleSelectImageFromCamera = async () => {
+    const hasPermission = await askForCameraPermission();
+    if (!hasPermission) {
+      return;
+    }
     try {
       let result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
@@ -95,7 +112,7 @@ const ProfileScreen = () => {
       });
 
       if (!result.canceled) {
-        await handleImageUpload(result.uri);
+        await handleImageUpload(result.assets[0].uri);
       } else {
         Alert.alert("You did not take any picture.");
       }
@@ -128,7 +145,7 @@ const ProfileScreen = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setProfileImage(data.data.user.photo);
+        setProfileImage(`${data.data.user.photo}`);
       } else {
         Alert.alert("Failed to upload image. Please try again.");
       }
@@ -137,6 +154,14 @@ const ProfileScreen = () => {
       Alert.alert("An error occurred while uploading the image.");
     }
   };
+
+  if (!userProfile) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

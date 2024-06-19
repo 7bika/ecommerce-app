@@ -66,7 +66,7 @@ const ChatBot = () => {
   };
 
   const handleEmailPress = () => {
-    Linking.openURL(`mailto:benaichaiheb@gmail.com`);
+    Linking.openURL(`mailto:ahmedtrimeche@gmail.com`);
   };
 
   const renderMessages = () => {
@@ -100,7 +100,6 @@ const ChatBot = () => {
       "I want to buy a product",
       "Can I talk to a person?",
       "I want help",
-      "I want to buy",
       "I want to manage my account",
     ];
 

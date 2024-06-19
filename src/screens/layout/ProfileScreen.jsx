@@ -42,7 +42,7 @@ const ProfileScreen = () => {
 
       const data = await response.json();
       setUserProfile(data.data.user);
-      setProfileImage(`${data.data.user.photo}`);
+      setProfileImage(data.data.user.photo); // The photo already contains the full URL now
     } catch (error) {
       console.error("Error fetching user profile:", error);
       Alert.alert(
@@ -145,7 +145,7 @@ const ProfileScreen = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setProfileImage(`${data.data.user.photo}`);
+        setProfileImage(data.data.user.photo); // The photo already contains the full URL now
       } else {
         Alert.alert("Failed to upload image. Please try again.");
       }
